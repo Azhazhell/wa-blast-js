@@ -149,3 +149,17 @@ Selesai! Semua pesan + gambar terkirim otomatis. 🎉
 | `Cannot find module ...` | Belum jalan `npm install`. Jalankan dulu. |
 | Pengiriman error di tengah | Biasanya koneksi internet. Jalankan ulang `node kirim.js`. |
 | Chrome/puppeteer error | Jalankan `npm install` ulang; pastikan koneksi internet lancar saat install. |
+| `Data passed to getter must include an id property ... memoize` | Bug library saat kirim media. Sudah di-fix otomatis oleh `patch.js` (jalan sendiri setelah `npm install`). Kalau masih muncul, jalankan `node patch.js` manual lalu `node kirim.js` lagi. |
+| `ProtocolError: ... timed out` | Sudah ditangani: timeout dinaikkan + versi WhatsApp Web di-pin. Kalau masih, jalankan ulang `node kirim.js` (koneksi internet harus stabil). |
+
+---
+
+## 🔧 Soal patch otomatis (`patch.js`)
+
+Versi WhatsApp Web terbaru sempat mematahkan fitur **kirim gambar/media** di
+library ini (error "memoize id property"). File `patch.js` memperbaikinya
+otomatis dengan menyisipkan satu baris ke dalam library setelah `npm install`.
+
+- Jalan **otomatis** lewat `postinstall` saat kamu `npm install`.
+- Kalau perlu jalankan manual: `node patch.js`
+- Kalau kamu `npm install` ulang / hapus `node_modules`, patch otomatis dipasang lagi.

@@ -4,7 +4,9 @@
   "description": "Blast pesan + gambar otomatis ke banyak nomor via WhatsApp Web",
   "main": "kirim.js",
   "scripts": {
-    "start": "node kirim.js"
+    "start": "node kirim.js",
+    "patch": "node patch.js",
+    "postinstall": "node patch.js"
   },
   "dependencies": {
     "whatsapp-web.js": "^1.26.0",

@@ -53,6 +53,13 @@ const client = new Client({
   puppeteer: {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    protocolTimeout: 120000, // naikin timeout 120s -> fix "ProtocolError: ... timed out"
+  },
+  // Pin versi WhatsApp Web yang stabil (fix bug kirim media versi terbaru)
+  webVersionCache: {
+    type: 'remote',
+    remotePath:
+      'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1023017062.html',
   },
 });
 
