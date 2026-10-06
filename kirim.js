@@ -99,16 +99,24 @@ client.on('ready', async () => {
       continue;
     }
 
-    const chatId = `${nomorNorm}@c.us`;
+    // Pakai getNumberId untuk dapat chatId yang valid (lebih andal dari isRegisteredUser)
     const teks = PESAN.replace(/\{nama\}/g, nama || '');
 
     try {
-      // Cek dulu apakah nomor terdaftar di WhatsApp
-      const terdaftar = await client.isRegisteredUser(chatId);
-      if (!terdaftar) {
-        console.log(`⚠️  ${label} -> nomor tidak terdaftar di WhatsApp, dilewati.`);
-        gagal++;
-        continue;
+      let chatId = `${nomorNorm}@c.us`;
+
+      // Coba resolve nomor -> id resmi WhatsApp. Kalau gagal/null, tetap kirim pakai chatId default.
+      try {
+        const numId = await client.getNumberId(nomorNorm);
+        if (numId && numId._serialized) {
+          chatId = numId._serialized;
+        } else if (numId === null) {
+          console.log(`⚠️  ${label} -> nomor tidak terdaftar di WhatsApp, dilewati.`);
+          gagal++;
+          continue;
+        }
+      } catch (e) {
+        // getNumberId error (bug library) -> abaikan, lanjut kirim pakai chatId default
       }
 
       if (media) {
