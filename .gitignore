@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# WhatsApp Web session (JANGAN di-commit — berisi data login kamu)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Gambar yang mau dikirim (ganti sesuai kebutuhan)
+gambar.jpg
+*.jpeg
+*.png
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
