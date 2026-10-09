@@ -6,6 +6,13 @@
 //  Progress disimpan BERDASARKAN NOMOR (ter-normalisasi 62xxx), bukan
 //  posisi/urutan. Jadi kamu bebas acak-acak urutan kontak.js, nambah
 //  atau hapus baris, tanpa risiko kirim dobel atau ada yang kelewat.
+//
+//  CATATAN SEMANTIK: kunci `terkirim` sekarang berarti "sudah DIPROSES
+//  (sudah dicoba), tidak akan diulang" — mencakup yang sukses MAUPUN yang
+//  gagal / tidak terdaftar / nomor tidak valid. Sekali dicoba = selesai
+//  buat keperluan batch, biar tiap batch harian selalu maju dan nomor
+//  rusak gak nyangkut mengulang terus. (Nama kunci tetap `terkirim` demi
+//  kompatibilitas dengan progress.json lama.)
 // =====================================================================
 
 const fs = require('fs');
@@ -41,8 +48,10 @@ function tulisProgress(filePath, progressObj) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-// Tandai satu nomor (sudah ter-normalisasi) sebagai terkirim, lalu
-// simpan SEGERA ke file. Idempoten: nomor yang sudah ada tidak diduplikasi.
+// Tandai satu nomor (sudah ter-normalisasi) sebagai SUDAH DIPROSES (dicoba),
+// lalu simpan SEGERA ke file. Dipanggil di SETIAP cabang percobaan (sukses
+// maupun gagal/tidak terdaftar/tidak valid) biar nomor itu gak diulang besok.
+// Idempoten: nomor yang sudah ada tidak diduplikasi.
 function tandaiTerkirim(filePath, nomorNorm) {
   const progress = bacaProgress(filePath);
   if (!progress.terkirim.includes(nomorNorm)) {
@@ -51,6 +60,10 @@ function tandaiTerkirim(filePath, nomorNorm) {
   }
   return progress;
 }
+
+// Alias nama yang lebih jelas untuk perilaku baru: "tandai sudah diproses".
+// Fungsinya sama persis dengan tandaiTerkirim (dipertahankan demi kode lama).
+const tandaiDiproses = tandaiTerkirim;
 
 // Hapus file progress (buat --reset). Aman kalau file belum ada.
 function resetProgress(filePath) {
@@ -62,8 +75,8 @@ function resetProgress(filePath) {
 }
 
 // Inti seleksi batch. Dari semua kontak, buang yang nomornya sudah
-// tercatat terkirim, lalu ambil maksimal `perHari` kontak pertama
-// yang belum terkirim.
+// tercatat DIPROSES (dicoba — sukses atau gagal), lalu ambil maksimal
+// `perHari` kontak pertama yang belum pernah dicoba.
 function pilihBatch(semuaKontak, progressObj, perHari) {
   const sudahSet = new Set((progressObj && progressObj.terkirim) || []);
 
@@ -91,6 +104,7 @@ module.exports = {
   bacaProgress,
   tulisProgress,
   tandaiTerkirim,
+  tandaiDiproses,
   resetProgress,
   pilihBatch,
 };

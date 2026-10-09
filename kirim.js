@@ -130,6 +130,8 @@ client.on('ready', async () => {
 
     if (!nomorNorm || nomorNorm.length < 10) {
       console.log(`⚠️  ${label} -> nomor tidak valid, dilewati.`);
+      // Tandai SEGERA sebagai sudah diproses biar gak dipilih lagi besok.
+      batch.tandaiTerkirim(PROGRESS_FILE, nomorNorm);
       gagal++;
       continue;
     }
@@ -147,6 +149,8 @@ client.on('ready', async () => {
           chatId = numId._serialized;
         } else if (numId === null) {
           console.log(`⚠️  ${label} -> nomor tidak terdaftar di WhatsApp, dilewati.`);
+          // Tandai SEGERA sebagai sudah diproses biar gak dicoba ulang besok.
+          batch.tandaiTerkirim(PROGRESS_FILE, nomorNorm);
           gagal++;
           continue;
         }
@@ -159,12 +163,15 @@ client.on('ready', async () => {
       } else {
         await client.sendMessage(chatId, teks);
       }
-      // Catat progress SEGERA setelah sukses (crash-safe). Nomor gagal tidak dicatat.
+      // Catat SEGERA: semua yang dicoba ditandai sudah diproses (crash-safe),
+      // baik sukses maupun gagal, biar gak diulang di run berikutnya.
       batch.tandaiTerkirim(PROGRESS_FILE, nomorNorm);
       console.log(`✅ ${label} -> terkirim.`);
       sukses++;
     } catch (err) {
       console.log(`❌ ${label} -> gagal: ${err.message}`);
+      // Tandai SEGERA walau gagal kirim: sudah dicoba = selesai buat batch.
+      batch.tandaiTerkirim(PROGRESS_FILE, nomorNorm);
       gagal++;
     }
 

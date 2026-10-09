@@ -172,8 +172,15 @@ Kalau semua sudah terkirim, muncul:
 
 **Progress diingat otomatis** di file `progress.json` (dibuat sendiri). Catatannya
 pakai **nomor**, bukan urutan — jadi kamu aman mengubah urutan, nambah, atau hapus
-baris di `kontak.js` tanpa risiko ada yang kekirim dobel atau kelewat. Nomor yang
-**gagal** kirim gak ditandai, jadi otomatis diulang pas jalan berikutnya.
+baris di `kontak.js` tanpa risiko ada yang kekirim dobel atau kelewat.
+
+**Penting soal batch:** setiap nomor yang **dicoba** dalam satu batch dihitung
+**sudah diproses** — baik yang berhasil, yang **gagal** kirim, yang **tidak terdaftar**
+di WhatsApp, maupun nomor yang **tidak valid**. Semuanya **gak akan diulang** besok.
+Jadi batch selalu maju: kalau kamu isi **10** nomor dan misalnya **~3 gagal**, besok
+tetap lanjut ke **10 berikutnya** (gak nyangkut ngulang-ngulang nomor rusak). Nomor
+yang gagal tetap **kelihatan di log** run itu (lihat hitungan `❌ Gagal`) — cuma gak
+diulang. Makanya aman taruh ~10 nomor per batch dengan harapan ~7 beneran nyampe.
 
 **Mau mulai ulang dari awal** (anggap semua belum terkirim)? Jalankan:
 
@@ -189,7 +196,8 @@ node kirim.js --reset
   kontak yang kamu kenal, risiko sangat rendah. Jangan dipakai spam massal ke
   nomor asing — bisa kena pembatasan dari WhatsApp.
 - **Jeda (`JEDA_MS`)** sengaja ada biar natural. Jangan di-nol-kan.
-- Nomor yang tidak terdaftar di WhatsApp otomatis dilewati (ditandai di log).
+- Nomor yang tidak terdaftar di WhatsApp otomatis dilewati (ditandai di log) DAN
+  dihitung sudah diproses, jadi gak diulang di run berikutnya.
 - Kalau mau logout sesi: hapus folder `.wwebjs_auth` yang muncul otomatis.
 
 ---
