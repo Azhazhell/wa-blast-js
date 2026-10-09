@@ -16,6 +16,10 @@ const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 const path = require('path');
 const kontak = require('./kontak');
+const batch = require('./batch');
+
+// File catatan progress batch harian (otomatis dibuat, di-ignore git).
+const PROGRESS_FILE = path.join(__dirname, 'progress.json');
 
 // ---------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>  ATUR DI SINI  <<<<<<<<<<<<<<<<
@@ -31,21 +35,30 @@ const GAMBAR = 'gambar.jpg';
 // 4000 = 4 detik. Untuk aman, pakai 4000-8000.
 const JEDA_MS = 5000;
 
+// Berapa kontak yang dikirim tiap kali jalan (per hari). Taruh semua nomor
+// (misal 50) di kontak.js, lalu jalankan `node kirim.js` sekali per hari —
+// script otomatis lanjut dari yang kemarin sampai semua terkirim.
+const PER_HARI = 10;
+
 // ---------------------------------------------------------------------
 //  >>>>>>>>>>>>>>>>  JANGAN DIUBAH DI BAWAH INI  <<<<<<<<<<<<<<<<
 // ---------------------------------------------------------------------
 
-function normalisasiNomor(raw) {
-  let n = String(raw).replace(/[^0-9]/g, '');
-  if (!n) return '';
-  if (n.startsWith('0')) n = '62' + n.slice(1);
-  else if (n.startsWith('620')) n = '62' + n.slice(3);
-  else if (!n.startsWith('62')) n = '62' + n;
-  return n;
-}
+// Normalisasi nomor dipindah ke batch.js (sumber tunggal). Alias biar kode lama tetap jalan.
+const normalisasiNomor = batch.normalisasiNomor;
 
 function tidur(ms) {
   return new Promise((res) => setTimeout(res, ms));
+}
+
+// --- Mode RESET: `node kirim.js --reset` (atau `reset`) ---
+// Hapus progress biar semua kontak dianggap belum terkirim lagi.
+// Jalan SEBELUM konek WhatsApp, langsung keluar.
+const argv = process.argv.slice(2);
+if (argv.includes('--reset') || argv.includes('reset')) {
+  batch.resetProgress(PROGRESS_FILE);
+  console.log('🧹 Progress direset. Semua kontak akan dianggap belum terkirim lagi.');
+  process.exit(0);
 }
 
 const client = new Client({
@@ -92,13 +105,28 @@ client.on('ready', async () => {
     console.log(`🖼️  Gambar dimuat: ${GAMBAR}\n`);
   }
 
+  // Ambil batch hari ini: lewati yang sudah terkirim, ambil PER_HARI berikutnya.
+  const progress = batch.bacaProgress(PROGRESS_FILE);
+  const info = batch.pilihBatch(kontak, progress, PER_HARI);
+
+  console.log(`📒 Total kontak        : ${info.total}`);
+  console.log(`📨 Sudah terkirim      : ${info.sudahTerkirim}`);
+  console.log(`📤 Dikirim hari ini    : ${info.batch.length} (maksimal ${PER_HARI})\n`);
+
+  // Kalau semua sudah terkirim, jangan kirim apa-apa.
+  if (info.selesaiSemua || info.batch.length === 0) {
+    console.log('🎉 SEMUA KONTAK SUDAH TERKIRIM. Gak ada yang perlu dikirim lagi.');
+    console.log('   Mau ulang dari awal? Jalankan: node kirim.js --reset\n');
+    await client.destroy();
+    process.exit(0);
+  }
+
   let sukses = 0;
   let gagal = 0;
 
-  for (let i = 0; i < kontak.length; i++) {
-    const { nama, nomor } = kontak[i];
-    const nomorNorm = normalisasiNomor(nomor);
-    const label = `[${i + 1}/${kontak.length}] ${nama || '(tanpa nama)'} - ${nomorNorm}`;
+  for (let i = 0; i < info.batch.length; i++) {
+    const { nama, nomorNorm } = info.batch[i];
+    const label = `[${i + 1}/${info.batch.length}] ${nama || '(tanpa nama)'} - ${nomorNorm}`;
 
     if (!nomorNorm || nomorNorm.length < 10) {
       console.log(`⚠️  ${label} -> nomor tidak valid, dilewati.`);
@@ -131,6 +159,8 @@ client.on('ready', async () => {
       } else {
         await client.sendMessage(chatId, teks);
       }
+      // Catat progress SEGERA setelah sukses (crash-safe). Nomor gagal tidak dicatat.
+      batch.tandaiTerkirim(PROGRESS_FILE, nomorNorm);
       console.log(`✅ ${label} -> terkirim.`);
       sukses++;
     } catch (err) {
@@ -139,7 +169,7 @@ client.on('ready', async () => {
     }
 
     // Jeda sebelum nomor berikutnya (kecuali yang terakhir)
-    if (i < kontak.length - 1) {
+    if (i < info.batch.length - 1) {
       await tidur(JEDA_MS);
     }
   }

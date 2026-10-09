@@ -129,6 +129,60 @@ Selesai! Semua pesan + gambar terkirim otomatis. 🎉
 
 ---
 
+## 📦 Kirim banyak nomor tapi dicicil per hari (batch harian)
+
+Punya banyak nomor (misal **50**) tapi gak mau kirim semua sekaligus biar aman?
+Script ini bisa kirim **sedikit-sedikit tiap hari** dan otomatis inget sampai mana.
+
+**Caranya:**
+
+1. Taruh **semua** nomor sekaligus di `kontak.js` (boleh 50 nomor langsung, gak masalah).
+2. Buka `kirim.js`, di bagian **ATUR DI SINI** ada:
+
+   ```js
+   const PER_HARI = 10;   // berapa kontak yang dikirim tiap kali jalan
+   ```
+
+   Angka ini = berapa kontak yang dikirim **tiap kali** kamu jalanin script.
+   Mau 5 per hari? Ganti jadi `5`. Mau 20? Ganti jadi `20`.
+
+3. Jalankan sekali per hari:
+
+   ```bash
+   node kirim.js
+   ```
+
+   - Hari 1 → kirim ke kontak **1–10**.
+   - Hari 2 → jalankan lagi, otomatis kirim ke **11–20** (yang kemarin dilewati).
+   - Begitu seterusnya sampai habis.
+
+Script akan nampilin ringkasan tiap jalan:
+
+```
+📒 Total kontak        : 50
+📨 Sudah terkirim      : 10
+📤 Dikirim hari ini    : 10 (maksimal 10)
+```
+
+Kalau semua sudah terkirim, muncul:
+
+```
+🎉 SEMUA KONTAK SUDAH TERKIRIM. Gak ada yang perlu dikirim lagi.
+```
+
+**Progress diingat otomatis** di file `progress.json` (dibuat sendiri). Catatannya
+pakai **nomor**, bukan urutan — jadi kamu aman mengubah urutan, nambah, atau hapus
+baris di `kontak.js` tanpa risiko ada yang kekirim dobel atau kelewat. Nomor yang
+**gagal** kirim gak ditandai, jadi otomatis diulang pas jalan berikutnya.
+
+**Mau mulai ulang dari awal** (anggap semua belum terkirim)? Jalankan:
+
+```bash
+node kirim.js --reset
+```
+
+---
+
 ## ⚠️ Catatan penting
 
 - **Pakai dengan bijak.** Ini WhatsApp Web tidak resmi. Untuk belasan nomor ke
